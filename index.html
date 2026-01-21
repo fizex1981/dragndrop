@@ -600,7 +600,7 @@
         });
     </script>
 
-    <!-- GAMEMONETIZE SDK -->
+    <!-- GAMEMONETIZE SDK - FIXED FOR COVER ADS -->
     <script type="text/javascript">
         window.SDK_OPTIONS = {
             gameId: "yqivnpieqw33nru9a3274iaqp11d1q0r",
@@ -614,18 +614,63 @@
                         break;
                     case "SDK_READY":
                         console.log("Gamemonetize SDK Ready");
-                        // Show banner ad when SDK is ready
-                        if (typeof sdk !== 'undefined' && sdk.showBanner) {
-                            sdk.showBanner();
+                        // Show banner ad when SDK is ready - FIXED POSITION
+                        if (typeof sdk !== 'undefined') {
+                            // Hide any existing banners first
+                            if (sdk.hideBanner) sdk.hideBanner();
+                            
+                            // Show banner at bottom - cover ads setup
+                            setTimeout(() => {
+                                if (sdk.showBanner) {
+                                    sdk.showBanner();
+                                }
+                            }, 1000);
+                            
+                            // Preload rewarded ad for better performance
+                            if (sdk.preloadRewardedAd) {
+                                sdk.preloadRewardedAd();
+                            }
                         }
                         break;
                     case "SDK_REWARDED_WATCH_COMPLETE":
                         // User watched rewarded ad, restart game
                         restartGame();
                         break;
+                    case "SDK_BANNER_SHOW":
+                        console.log("Banner ad showing - adjusting layout");
+                        adjustForBannerAd();
+                        break;
+                    case "SDK_BANNER_HIDE":
+                        console.log("Banner ad hidden - restoring layout");
+                        restoreLayout();
+                        break;
                 }
             }
         };
+        
+        // Function to adjust layout when banner ad shows
+        function adjustForBannerAd() {
+            // Add padding to body to accommodate banner ad
+            document.body.style.paddingBottom = '50px';
+            
+            // Adjust game wrapper for banner
+            const gameWrapper = document.querySelector('.game-wrapper');
+            if (gameWrapper) {
+                gameWrapper.style.maxHeight = 'calc(506px - 50px)';
+            }
+        }
+        
+        // Function to restore layout when banner ad hides
+        function restoreLayout() {
+            // Remove padding
+            document.body.style.paddingBottom = '';
+            
+            // Restore game wrapper height
+            const gameWrapper = document.querySelector('.game-wrapper');
+            if (gameWrapper) {
+                gameWrapper.style.maxHeight = '506px';
+            }
+        }
         
         // Load Gamemonetize SDK
         (function (doc, scriptTag, elementId) {
