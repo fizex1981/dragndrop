@@ -2,670 +2,824 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Color Match Game</title>
+    <!-- PERBAIKAN META VIEWPORT UNTUK GAMEMONETIZE -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Word Match - Objects Edition</title>
     
+    <!-- Critical CSS untuk render awal -->
     <style>
-        :root {
-            --bg: #f8f9fa;
-            --white: #ffffff;
-            --dark: #2d3436;
-        }
-
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         html, body {
             width: 100%;
             height: 100%;
-            background-color: var(--bg);
-            font-family: 'Segoe UI', 'Quicksand', system-ui, sans-serif;
-            user-select: none;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+            position: fixed;
         }
 
         body {
+            background: linear-gradient(135deg, #FF6B8B 0%, #36D7B7 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-            margin: 0;
-            overflow: auto; /* Allow scrolling jika perlu */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
-        /* HAPUS aspect ratio dari body - ini penyebab gelap di PC */
-        /* body {
-            aspect-ratio: 16/9;
-            max-height: 100%;
-        } */
-
-        /* Container utama untuk desktop */
-        .game-wrapper {
-            width: 100%;
-            max-width: 900px;
-            height: auto;
-            min-height: 506px; /* Minimum height untuk 16:9 */
+        /* LOADING SCREEN */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #FF6B8B 0%, #36D7B7 100%);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            position: relative;
-            margin: 0 auto;
-            background: var(--bg);
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            max-width: 90%;
+        }
+
+        .loading-title {
+            font-size: clamp(1.8rem, 8vw, 2.5rem);
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            opacity: 0.9;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Game wrapper */
+        .game-wrapper {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            width: calc(100vw - 40px);
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border: 2px solid #e0e0e0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 8px solid #FFD166;
+            margin: 10px auto;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* Untuk desktop besar */
-        @media (min-width: 1024px) {
-            body {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 40px;
-            }
-            
-            .game-wrapper {
-                padding: 30px;
-                box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-                border: 3px solid white;
-            }
+        .game-loaded .game-wrapper {
+            opacity: 1;
         }
 
-        header { 
-            padding: 10px 0; 
-            text-align: center; 
-            width: 100%; 
-            margin-bottom: 5px;
-            flex-shrink: 0;
+        .game-loaded #loading-screen {
+            opacity: 0;
+            pointer-events: none;
         }
+
+        .score-display {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            right: max(10px, env(safe-area-inset-right));
+            background: #FF6B8B;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loader"></div>
+            <div class="loading-title">WORD MATCH</div>
+            <div class="loading-text">Loading game...</div>
+        </div>
+    </div>
+
+    <div class="score-display" id="score">0/6</div>
+    
+    <div class="game-wrapper">
+        <div class="header">
+            <h1>WORD MATCH</h1>
+        </div>
         
-        h1 { 
-            color: #574b90; 
-            margin: 0 0 5px 0; 
-            font-size: 2.2rem; 
-            text-shadow: 2px 2px white; 
-            font-weight: 900; 
-        }
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div class="instruction">Drag words to matching emojis!</div>
+        </div>
         
-        p { 
-            margin: 0; 
-            color: #636e72; 
-            font-size: 1.2rem; 
-            font-weight: 600; 
+        <div id="source-area" class="source-container"></div>
+        
+        <div class="target-container">
+            <div class="target-title">FIND THE MATCH!</div>
+            <div id="target-area-grid" style="display: contents;"></div>
+        </div>
+    </div>
+
+    <div id="win-screen">
+        <div class="win-content">
+            <div class="win-title">VICTORY! 🎉</div>
+            <div id="win-message" class="win-message">Amazing job!</div>
+            <button class="restart-btn" onclick="showAdAndRestart()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- CSS Non-Critical (ditunda) -->
+    <style>
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
         }
 
-        /* Game area container */
-        .game-container {
-            width: 100%;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
+        .header h1 {
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
+            color: #FF6B8B;
+            text-shadow: 3px 3px 0 #FFD166;
+            margin: 0;
+            letter-spacing: 1px;
+            word-wrap: break-word;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #36D7B7;
+            font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: #FFD166;
+            padding: 8px 15px;
+            border-radius: 15px;
+            display: inline-block;
         }
 
         .source-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            width: 100%;
-            max-width: 550px;
-            margin: 0 auto 15px;
-            padding: 20px;
-            background: #ffffff;
-            border-radius: 20px;
-            border: 5px solid #dfe6e9;
-            justify-items: center;
-            flex-shrink: 0;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            height: 180px;
         }
 
-        .color-card {
-            width: 100%;
-            max-width: 100px;
-            aspect-ratio: 1/1;
+        .card {
+            background: white;
             border-radius: 15px;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-            cursor: grab;
-            z-index: 10;
-            border: 3px solid white;
-            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(255, 107, 139, 0.2);
+            cursor: pointer;
+            font-weight: bold;
+            color: #FF6B8B;
+            border: 4px solid #FFD166;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            padding: 10px 5px;
+            text-align: center;
+            transition: all 0.2s;
+            -webkit-user-drag: element;
+            touch-action: none;
         }
 
-        .color-card:active { cursor: grabbing; transform: scale(0.95); }
+        .card:active {
+            transform: scale(0.98);
+        }
 
         .target-container {
-            width: 100%;
-            max-width: 550px;
-            background: #dfe6e9;
-            border-radius: 20px;
+            background: linear-gradient(135deg, #36D7B7, #4ECDC4);
+            border-radius: 18px;
             padding: 20px;
-            box-sizing: border-box;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto repeat(2, 1fr);
             gap: 12px;
-            border: 5px solid #b2bec3;
-            box-shadow: 0 6px 0 #95a5a6;
-            flex-shrink: 0;
+            border: 5px solid white;
         }
 
-        .target-label {
+        .target-title {
             grid-column: span 3;
+            color: white;
             text-align: center;
-            font-weight: 900;
-            color: #2d3436;
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            background: rgba(255, 255, 255, 0.7);
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 1rem;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 15px;
+            border: 3px dashed white;
         }
 
         .target {
-            aspect-ratio: 1/1;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 15px;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            border: 3px dashed #636e72;
-            position: relative;
-            transition: background 0.3s, border-color 0.3s;
+            border: 4px dashed rgba(255, 255, 255, 0.3);
+            font-size: clamp(2rem, 8vw, 2.8rem);
+            aspect-ratio: 1/1;
+            transition: all 0.3s;
         }
 
-        .target.hover { background: rgba(255, 255, 255, 0.8); border-color: #2d3436; }
-        .object-icon { font-size: 2.2rem; filter: grayscale(100%) brightness(50%); transition: all 0.5s ease; }
-        .target.correct { background: var(--white); border: none; box-shadow: 0 3px 0 rgba(0,0,0,0.1); animation: popIn 0.5s ease; }
-
-        @keyframes popIn {
-            0% { transform: scale(0.8); }
-            70% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .target.hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #FFD166;
+            transform: scale(1.08);
         }
 
-        .target.correct .object-icon { filter: grayscale(0%) brightness(100%); transform: scale(1.2); }
+        .target.correct {
+            background: white;
+            border-style: solid;
+            border-color: #FFD166;
+        }
 
+        /* WIN SCREEN */
         #win-screen {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 500px;
-            background: rgba(255,255,255,0.98);
-            border-radius: 30px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-            z-index: 1000;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(54, 215, 183, 0.95);
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .win-content {
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
             text-align: center;
-            animation: fadeIn 0.5s ease;
+            width: calc(100% - 40px);
+            max-width: 400px;
+            border: 8px solid #FFD166;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .btn-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            width: 100%; 
-            align-items: center; 
-            margin-top: 20px; 
+        .win-title {
+            color: #FF6B8B;
+            font-size: clamp(2rem, 8vw, 3rem);
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 0 #FFD166;
         }
 
-        button {
-            padding: 18px 30px;
+        .win-message {
+            color: #36D7B7;
+            font-size: clamp(1.2rem, 5vw, 1.5rem);
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .restart-btn {
+            background: linear-gradient(135deg, #FF6B8B, #FF9A76);
             color: white;
             border: none;
-            border-radius: 50px;
-            font-family: inherit;
-            font-size: 1.3rem;
-            font-weight: 900;
-            width: 100%;
-            max-width: 300px;
+            padding: 18px;
+            border-radius: 20px;
+            font-size: clamp(1.1rem, 4vw, 1.3rem);
+            font-weight: bold;
             cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 100%;
+            border: 5px solid #FFD166;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            -webkit-appearance: none;
         }
 
-        .btn-play { 
-            background: linear-gradient(135deg, #6c5ce7, #3f37c9); 
-            box-shadow: 0 5px 0 #2d278f; 
+        .restart-btn:active {
+            transform: scale(0.98);
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 0 #2d278f;
-        }
-
-        button:active {
-            transform: translateY(0);
-            box-shadow: 0 3px 0 #2d278f;
-        }
-
-        /* FIX MOBILE SCREEN */
-        @media (max-width: 767px) {
-            body {
-                padding: 10px;
-                background: var(--bg);
-            }
-            
+        /* RESPONSIVE IMPROVEMENTS */
+        @media (max-width: 480px) {
             .game-wrapper {
-                width: 100%;
-                max-width: 100%;
-                min-height: auto;
-                padding: 10px;
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
+                padding: 15px;
+                margin: 5px;
+                width: calc(100vw - 20px);
             }
             
-            .source-container, .target-container {
-                max-width: 95%;
-                margin: 10px auto;
+            .source-container {
+                height: 160px;
+                gap: 8px;
             }
             
-            .color-card { 
-                max-width: 80px; 
-            }
-            
-            h1 { 
-                font-size: 1.5rem; 
-            }
-            
-            p {
-                font-size: 1rem;
-            }
-            
-            .object-icon { 
-                font-size: 1.6rem; 
-            }
-            
-            button {
-                padding: 14px 25px;
-                font-size: 1.1rem;
-                max-width: 250px;
+            .target-container {
+                padding: 15px;
+                gap: 10px;
             }
         }
 
-        /* Untuk landscape mobile */
-        @media (max-width: 900px) and (orientation: landscape) {
+        @media (max-height: 600px) {
+            .game-wrapper {
+                max-height: 85vh;
+                margin-top: 5px;
+            }
+            
+            .source-container {
+                height: 140px;
+            }
+            
+            .card {
+                font-size: 0.9rem;
+                padding: 6px 4px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
             body {
                 padding: 5px;
             }
             
             .game-wrapper {
-                max-height: 95vh;
+                display: flex;
+                flex-direction: row;
+                gap: 15px;
+                max-width: 95vw;
+                padding: 15px;
+                margin: 5px auto;
+                max-height: 85vh;
             }
             
-            .game-container {
-                flex-direction: row;
-                justify-content: space-around;
-                align-items: center;
-                gap: 20px;
+            .header h1 {
+                display: none;
+            }
+            
+            .instruction {
+                display: none;
             }
             
             .source-container {
-                max-width: 45%;
-                margin: 0;
-                padding: 15px;
+                width: 45%;
+                height: auto;
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(6, 1fr);
             }
             
             .target-container {
-                max-width: 45%;
-                padding: 15px;
+                width: 55%;
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto repeat(3, 1fr);
             }
             
-            .color-card { 
-                max-width: 70px; 
+            .target-title {
+                grid-column: span 2;
             }
-            
-            header {
-                padding: 5px 0;
-                margin-bottom: 5px;
+
+            #loading-screen {
+                flex-direction: row;
+                gap: 30px;
             }
-            
-            h1 { 
-                font-size: 1.5rem; 
-                margin-bottom: 3px;
+
+            .loading-content {
+                display: flex;
+                align-items: center;
+                gap: 20px;
             }
-            
-            p { 
-                font-size: 0.9rem; 
-            }
-            
-            .object-icon { 
-                font-size: 1.5rem; 
-            }
-            
-            .target-label {
-                padding: 8px 15px;
-                margin-bottom: 10px;
-                font-size: 0.9rem;
+
+            .loader {
+                margin: 0;
             }
         }
 
-        /* Efek hover untuk desktop */
-        @media (hover: hover) {
-            .color-card:hover {
-                transform: scale(1.05);
-                box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+        /* Safe area untuk iPhone X+ */
+        @supports (padding: max(0px)) {
+            .game-wrapper {
+                padding-left: max(15px, env(safe-area-inset-left));
+                padding-right: max(15px, env(safe-area-inset-right));
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
+                padding-top: max(15px, env(safe-area-inset-top));
             }
             
-            button:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 8px 0 #2d278f;
-            }
-        }
-
-        /* Untuk layar sangat kecil */
-        @media (max-width: 350px) {
-            .color-card { 
-                max-width: 60px; 
-            }
-            
-            h1 { 
-                font-size: 1.2rem; 
-            }
-            
-            p {
-                font-size: 0.9rem;
-            }
-            
-            .object-icon { 
-                font-size: 1.3rem; 
+            #win-screen {
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-top: env(safe-area-inset-top);
             }
         }
     </style>
-</head>
-<body>
 
-    <div class="game-wrapper">
-        <header>
-            <h1>COLOR MATCH! 🎨</h1>
-            <p>Match the color to the object!</p>
-        </header>
-
-        <div class="game-container">
-            <div id="source-area" class="source-container"></div>
-
-            <div class="target-container">
-                <div class="target-label">MATCH THE OBJECTS BELOW</div>
-                <div id="target-area-grid" style="display: contents;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="win-screen">
-        <h2 style="color: #6c5ce7; font-size: 2.5rem; margin: 0; text-shadow: 2px 2px white;">GREAT JOB! 🌈</h2>
-        <p style="font-size: 1.1rem; color: #555; margin: 10px 0 20px;">You are a color expert!</p>
-        <div class="btn-container">
-            <button class="btn-play" onclick="playAgain()">PLAY AGAIN</button>
-        </div>
-    </div>
-
-    <!-- Script dan SDK tetap sama seperti sebelumnya -->
     <script>
-        const colorData = [
-            { name: 'red', hex: '#e74c3c', objects: ['🍎', '🍓', '🚗', '🎈'] },
-            { name: 'blue', hex: '#3498db', objects: ['🐳', '🐬', '🦋', '🐟'] },
-            { name: 'green', hex: '#2ecc71', objects: ['🌳', '🐸', '🐢', '🥦'] },
-            { name: 'yellow', hex: '#f1c40f', objects: ['🍌', '☀️', '🐤', '🍋'] },
-            { name: 'purple', hex: '#9b59b6', objects: ['🍇', '🍆', '🔮', '🐙'] },
-            { name: 'orange', hex: '#e67e22', objects: ['🥕', '🍊', '🏀', '🦊'] },
-            { name: 'pink', hex: '#fd79a8', objects: ['🌸', '🦩', '🍧', '🎀'] },
-            { name: 'brown', hex: '#8d6e63', objects: ['🐻', '🐵', '🍫', '🪵'] }
-        ];
-
+        // Game variables
         let score = 0;
-        const totalPerRound = 6;
-        let audioCtx;
-        let gameStarted = false;
-
-        function playSound(type) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-
-            if (type === 'correct') {
-                osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'wrong') {
-                osc.frequency.setValueAtTime(150, now);
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-                gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'win') {
-                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-                    const o = audioCtx.createOscillator();
-                    const g = audioCtx.createGain();
-                    o.connect(g); g.connect(audioCtx.destination);
-                    o.frequency.setValueAtTime(f, now + (i * 0.1));
-                    g.gain.setValueAtTime(0, now + (i * 0.1));
-                    g.gain.linearRampToValueAtTime(0.1, now + (i * 0.1) + 0.05);
-                    g.gain.linearRampToValueAtTime(0, now + (i * 0.1) + 0.3);
-                    o.start(now + (i * 0.1)); o.stop(now + (i * 0.1) + 0.3);
-                });
-            }
-        }
-
         let activeCard = null;
         let startX, startY;
+        window.gameStarted = false;
+        let currentPairs = [];
+        let audioCtx;
 
-        // Show ad when user clicks PLAY AGAIN
-        function playAgain() {
-            if (typeof sdk !== 'undefined' && sdk.showRewardedAd) {
-                sdk.showRewardedAd();
-            }
-            restartGame();
+        // Game data
+        const gameData = {
+            transport: [
+                { word: 'CAR', emoji: '🚗' }, { word: 'BIKE', emoji: '🚲' },
+                { word: 'PLANE', emoji: '✈️' }, { word: 'SHIP', emoji: '🚢' },
+                { word: 'ROCKET', emoji: '🚀' }, { word: 'TRAIN', emoji: '🚆' }
+            ],
+            home: [
+                { word: 'HOUSE', emoji: '🏠' }, { word: 'CHAIR', emoji: '🪑' },
+                { word: 'LAMP', emoji: '💡' }, { word: 'CLOCK', emoji: '⏰' },
+                { word: 'PHONE', emoji: '📱' }, { word: 'COMPUTER', emoji: '💻' },
+                { word: 'BOOK', emoji: '📖' }, { word: 'PENCIL', emoji: '✏️' }
+            ],
+            sports: [
+                { word: 'BALL', emoji: '⚽' }, { word: 'SHOES', emoji: '👟' },
+                { word: 'GUITAR', emoji: '🎸' }, { word: 'PIANO', emoji: '🎹' }
+            ],
+            nature: [
+                { word: 'SUN', emoji: '☀️' }, { word: 'MOON', emoji: '🌙' },
+                { word: 'TREE', emoji: '🌳' }, { word: 'FLOWER', emoji: '🌸' }
+            ],
+            animals: [
+                { word: 'CAT', emoji: '🐱' }, { word: 'DOG', emoji: '🐶' },
+                { word: 'FISH', emoji: '🐟' }, { word: 'BIRD', emoji: '🐦' }
+            ],
+            fruits: [
+                { word: 'APPLE', emoji: '🍎' }, { word: 'BANANA', emoji: '🍌' },
+                { word: 'STRAWBERRY', emoji: '🍓' }, { word: 'GRAPES', emoji: '🍇' },
+                { word: 'WATERMELON', emoji: '🍉' }, { word: 'ORANGE', emoji: '🍊' },
+                { word: 'LEMON', emoji: '🍋' }, { word: 'PEACH', emoji: '🍑' }
+            ],
+            food: [
+                { word: 'PIZZA', emoji: '🍕' }, { word: 'BURGER', emoji: '🍔' },
+                { word: 'ICECREAM', emoji: '🍦' }, { word: 'CAKE', emoji: '🍰' },
+                { word: 'COFFEE', emoji: '☕' }, { word: 'TEA', emoji: '🍵' },
+                { word: 'SUSHI', emoji: '🍣' }, { word: 'TACO', emoji: '🌮' }
+            ],
+            weather: [
+                { word: 'WATER', emoji: '💧' }, { word: 'FIRE', emoji: '🔥' },
+                { word: 'STAR', emoji: '⭐' }, { word: 'CLOUD', emoji: '☁️' },
+                { word: 'RAIN', emoji: '🌧️' }, { word: 'SNOW', emoji: '❄️' }
+            ],
+            objects: [
+                { word: 'HEART', emoji: '❤️' }, { word: 'DIAMOND', emoji: '💎' },
+                { word: 'CROWN', emoji: '👑' }, { word: 'MONEY', emoji: '💰' },
+                { word: 'KEY', emoji: '🔑' }, { word: 'LOCK', emoji: '🔒' }
+            ]
+        };
+
+        // Fungsi untuk mendapatkan 6 pairs random
+        function getRandomPairs() {
+            const categories = Object.keys(gameData);
+            const selectedPairs = [];
+            const usedWords = new Set();
+            
+            // Pilih 3 kategori random
+            const selectedCategories = [...categories]
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 3);
+            
+            // Ambil 2 pairs dari setiap kategori
+            selectedCategories.forEach(category => {
+                const availablePairs = gameData[category]
+                    .filter(pair => !usedWords.has(pair.word))
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 2);
+                
+                availablePairs.forEach(pair => {
+                    selectedPairs.push(pair);
+                    usedWords.add(pair.word);
+                });
+            });
+            
+            return selectedPairs;
         }
 
-        function showWinScreen() {
-            document.getElementById('win-screen').style.display = 'flex';
-            playSound('win');
+        const winMessages = [
+            "Perfect! 🌟", "Excellent! 🏆", "Fantastic! ✨", 
+            "Brilliant! 💎", "Awesome! 👍", "Super! ⭐",
+            "Genius! 🧠", "Master! 👑", "Champion! 🏅"
+        ];
+
+        // Initialize game
+        function initGame() {
+            if (window.gameStarted) return;
             
-            // Auto-reload after 5 seconds if user doesn't click
+            console.log("Initializing game...");
+            
+            // Tampilkan UI game
+            document.getElementById('score').style.display = 'block';
+            
+            // Initialize audio context (ditunda)
             setTimeout(() => {
-                if (document.getElementById('win-screen').style.display === 'flex') {
-                    playAgain();
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log("Audio not supported");
                 }
-            }, 5000);
-        }
-
-        function restartGame() { 
-            init(); 
-        }
-
-        function init() {
-            score = 0;
-            activeCard = null;
-            gameStarted = true;
+            }, 1000);
             
-            const selectedColors = [...colorData].sort(() => 0.5 - Math.random()).slice(0, totalPerRound);
             const sourceArea = document.getElementById('source-area');
             const targetGrid = document.getElementById('target-area-grid');
-            sourceArea.innerHTML = ''; targetGrid.innerHTML = '';
-
-            [...selectedColors].sort(() => 0.5 - Math.random()).forEach(color => {
+            
+            // Clear existing
+            sourceArea.innerHTML = '';
+            targetGrid.innerHTML = '';
+            
+            // Get random pairs
+            currentPairs = getRandomPairs();
+            
+            // Create word cards (2x3 grid)
+            currentPairs.forEach(pair => {
                 const card = document.createElement('div');
-                card.className = 'color-card';
-                card.style.backgroundColor = color.hex;
-                card.dataset.color = color.name;
+                card.className = 'card';
+                card.dataset.match = pair.emoji;
+                card.textContent = pair.word;
                 card.addEventListener('mousedown', startDrag);
-                card.addEventListener('touchstart', startDrag, {passive: false});
+                card.addEventListener('touchstart', startDrag, { passive: false });
                 sourceArea.appendChild(card);
             });
-
-            selectedColors.forEach(color => {
+            
+            // Create target emojis (3x2 grid)
+            [...currentPairs].sort(() => Math.random() - 0.5).forEach(pair => {
                 const target = document.createElement('div');
                 target.className = 'target';
-                target.dataset.color = color.name;
-                const randomObj = color.objects[Math.floor(Math.random() * color.objects.length)];
-                target.innerHTML = `<div class="object-icon">${randomObj}</div>`;
+                target.dataset.emoji = pair.emoji;
+                target.textContent = pair.emoji;
                 targetGrid.appendChild(target);
             });
-            document.getElementById('win-screen').style.display = 'none';
+            
+            // Reset score
+            score = 0;
+            updateScore();
+            
+            window.gameStarted = true;
+            console.log("Game initialized successfully");
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `${score}/6`;
+        }
+
+        function playSound(freq) {
+            try {
+                if (!audioCtx) return;
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = freq;
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } catch (e) {
+                // Audio error silent
+            }
         }
 
         function startDrag(e) {
             if (activeCard) return;
             e.preventDefault();
-            activeCard = e.target.closest('.color-card');
-            const t = e.type === 'touchstart' ? e.touches[0] : e;
+            
+            activeCard = e.target.closest('.card');
+            if (!activeCard) return;
+            
+            const touch = e.type === 'touchstart' ? e.touches[0] : e;
             const rect = activeCard.getBoundingClientRect();
-            startX = t.clientX - rect.left;
-            startY = t.clientY - rect.top;
+            
+            startX = touch.clientX - rect.left;
+            startY = touch.clientY - rect.top;
+            
             activeCard.style.position = 'fixed';
-            activeCard.style.zIndex = '1000';
             activeCard.style.width = rect.width + 'px';
             activeCard.style.height = rect.height + 'px';
-            activeCard.style.transform = 'scale(1.1)';
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag, {passive: false});
-            document.addEventListener('mouseup', stopDrag);
-            document.addEventListener('touchend', stopDrag);
-        }
-
-        function drag(e) {
-            if (!activeCard) return;
-            const t = e.type === 'touchmove' ? e.touches[0] : e;
-            activeCard.style.left = (t.clientX - startX) + 'px';
-            activeCard.style.top = (t.clientY - startY) + 'px';
-            const target = getTarget(t.clientX, t.clientY);
-            document.querySelectorAll('.target').forEach(el => el.classList.remove('hover'));
-            if (target && !target.classList.contains('correct')) target.classList.add('hover');
-        }
-
-        function stopDrag(e) {
-            if (!activeCard) return;
-            const t = e.type === 'touchend' ? e.changedTouches[0] : e;
-            const target = getTarget(t.clientX, t.clientY);
+            activeCard.style.left = rect.left + 'px';
+            activeCard.style.top = rect.top + 'px';
+            activeCard.style.zIndex = '1000';
             
-            if (target && target.dataset.color === activeCard.dataset.color && !target.classList.contains('correct')) {
-                target.classList.add('correct');
-                score++;
-                playSound('correct');
-                activeCard.style.opacity = '0';
-                setTimeout(() => { if (activeCard && activeCard.parentNode) activeCard.parentNode.removeChild(activeCard); }, 200);
-                if(score === totalPerRound) setTimeout(showWinScreen, 500);
-            } else {
-                activeCard.style.position = 'static';
-                activeCard.style.transform = 'scale(1)';
-                activeCard.style.width = ''; activeCard.style.height = '';
-                playSound('wrong');
+            document.addEventListener('mousemove', moveDrag);
+            document.addEventListener('touchmove', moveDrag, { passive: false });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function moveDrag(e) {
+            if (!activeCard) return;
+            e.preventDefault();
+            
+            const touch = e.type === 'touchmove' ? e.touches[0] : e;
+            activeCard.style.left = (touch.clientX - startX) + 'px';
+            activeCard.style.top = (touch.clientY - startY) + 'px';
+            
+            // Highlight target under cursor
+            const target = getTargetAtPoint(touch.clientX, touch.clientY);
+            document.querySelectorAll('.target').forEach(t => t.classList.remove('hover'));
+            if (target && !target.classList.contains('correct')) {
+                target.classList.add('hover');
             }
-            document.querySelectorAll('.target').forEach(el => el.classList.remove('hover'));
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('touchmove', drag);
-            document.removeEventListener('mouseup', stopDrag);
-            document.removeEventListener('touchend', stopDrag);
+        }
+
+        function endDrag(e) {
+            if (!activeCard) return;
+            
+            const touch = e.type === 'touchend' ? (e.changedTouches ? e.changedTouches[0] : e) : e;
+            const target = getTargetAtPoint(touch.clientX, touch.clientY);
+            
+            if (target && target.dataset.emoji === activeCard.dataset.match && !target.classList.contains('correct')) {
+                // Correct match
+                target.classList.add('correct');
+                playSound(800);
+                activeCard.remove();
+                score++;
+                updateScore();
+                
+                if (score === 6) {
+                    setTimeout(showWinScreen, 300);
+                }
+            } else {
+                // Wrong match
+                playSound(200);
+                activeCard.style.position = '';
+                activeCard.style.width = '';
+                activeCard.style.height = '';
+                activeCard.style.left = '';
+                activeCard.style.top = '';
+                activeCard.style.zIndex = '';
+            }
+            
+            // Clean up
+            document.querySelectorAll('.target').forEach(t => t.classList.remove('hover'));
+            document.removeEventListener('mousemove', moveDrag);
+            document.removeEventListener('touchmove', moveDrag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchend', endDrag);
             activeCard = null;
         }
 
-        function getTarget(x, y) {
-            return document.elementsFromPoint(x, y).find(el => el.classList && el.classList.contains('target'));
+        function getTargetAtPoint(x, y) {
+            const elements = document.elementsFromPoint(x, y);
+            return elements.find(el => el.classList.contains('target'));
         }
 
+        function showWinScreen() {
+            const message = winMessages[Math.floor(Math.random() * winMessages.length)];
+            document.getElementById('win-message').textContent = message;
+            
+            setTimeout(() => {
+                document.getElementById('win-screen').style.display = 'flex';
+            }, 500);
+        }
+
+        // Restart game with ad
+        function showAdAndRestart() {
+            console.log("Showing ad before restart...");
+            
+            // Hide win screen
+            document.getElementById('win-screen').style.display = 'none';
+            
+            // Show ad through Gamemonetize SDK
+            if (typeof GameMonetize !== 'undefined' && GameMonetize.showAd) {
+                try {
+                    GameMonetize.showAd(function() {
+                        console.log("Ad finished, restarting game");
+                        restartGame();
+                    });
+                } catch (error) {
+                    console.log("Ad error, restarting directly");
+                    restartGame();
+                }
+            } else {
+                // If no SDK, restart directly
+                console.log("SDK not available, restarting directly");
+                restartGame();
+            }
+        }
+
+        function restartGame() {
+            window.gameStarted = false;
+            
+            // Sembunyikan score sementara
+            document.getElementById('score').style.display = 'none';
+            
+            initGame();
+        }
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Load game setelah DOM siap
         document.addEventListener('DOMContentLoaded', function() {
-            init();
-        });
-        
-        document.addEventListener('click', () => { 
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+            console.log("DOM loaded, initializing...");
+            
+            // Beri sedikit delay untuk render awal
+            setTimeout(function() {
+                initGame();
+                
+                // Tampilkan game setelah 500ms
+                setTimeout(function() {
+                    document.body.classList.add('game-loaded');
+                }, 500);
+            }, 300);
         });
     </script>
 
-    <!-- GAMEMONETIZE SDK - FIXED FOR COVER ADS -->
+    <!-- GAMEMONETIZE SDK - OPTIMIZED -->
     <script type="text/javascript">
+        // Game ID
+        const GAME_ID = "qj7yeiz9goiesn7f3pyikb737ashul2b";
+        
         window.SDK_OPTIONS = {
-            gameId: "yqivnpieqw33nru9a3274iaqp11d1q0r",
+            gameId: GAME_ID,
             onEvent: function (event) {
+                console.log("Gamemonetize Event:", event.name);
+                
                 switch (event.name) {
                     case "SDK_GAME_PAUSE":
-                        if (audioCtx) audioCtx.suspend();
+                        console.log("Game Paused for Ad");
                         break;
+                        
                     case "SDK_GAME_START":
-                        if (audioCtx) audioCtx.resume();
-                        break;
-                    case "SDK_READY":
-                        console.log("Gamemonetize SDK Ready");
-                        // Show banner ad when SDK is ready - FIXED POSITION
-                        if (typeof sdk !== 'undefined') {
-                            // Hide any existing banners first
-                            if (sdk.hideBanner) sdk.hideBanner();
-                            
-                            // Show banner at bottom - cover ads setup
-                            setTimeout(() => {
-                                if (sdk.showBanner) {
-                                    sdk.showBanner();
-                                }
-                            }, 1000);
-                            
-                            // Preload rewarded ad for better performance
-                            if (sdk.preloadRewardedAd) {
-                                sdk.preloadRewardedAd();
-                            }
+                        console.log("Game Started after Ad");
+                        if (!window.gameStarted) {
+                            setTimeout(initGame, 100);
                         }
                         break;
-                    case "SDK_REWARDED_WATCH_COMPLETE":
-                        // User watched rewarded ad, restart game
-                        restartGame();
+                        
+                    case "SDK_READY":
+                        console.log("SDK Ready");
                         break;
-                    case "SDK_BANNER_SHOW":
-                        console.log("Banner ad showing - adjusting layout");
-                        adjustForBannerAd();
-                        break;
-                    case "SDK_BANNER_HIDE":
-                        console.log("Banner ad hidden - restoring layout");
-                        restoreLayout();
+                        
+                    case "SDK_ERROR":
+                        console.error("SDK Error:", event.message);
+                        // Fallback jika SDK error
+                        setTimeout(function() {
+                            if (!window.gameStarted) {
+                                initGame();
+                            }
+                        }, 500);
                         break;
                 }
             }
         };
         
-        // Function to adjust layout when banner ad shows
-        function adjustForBannerAd() {
-            // Add padding to body to accommodate banner ad
-            document.body.style.paddingBottom = '50px';
-        }
-        
-        // Function to restore layout when banner ad hides
-        function restoreLayout() {
-            // Remove padding
-            document.body.style.paddingBottom = '';
-        }
-        
-        // Load Gamemonetize SDK
-        (function (doc, scriptTag, elementId) {
-            var firstScript = doc.getElementsByTagName(scriptTag)[0];
-            if (!doc.getElementById(elementId)) {
-                var script = doc.createElement(scriptTag);
-                script.id = elementId;
-                script.src = "https://api.gamemonetize.com/sdk.js";
-                firstScript.parentNode.insertBefore(script, firstScript);
-            }
-        })(document, "script", "gamemonetize-sdk");
+        // Load SDK secara async
+        (function() {
+            setTimeout(function() {
+                var script = document.createElement('script');
+                script.id = 'gamemonetize-sdk';
+                script.src = 'https://api.gamemonetize.com/sdk.js';
+                script.async = true;
+                script.onload = function() {
+                    console.log("GameMonetize SDK loaded successfully");
+                };
+                script.onerror = function() {
+                    console.log("GameMonetize SDK failed to load, using fallback");
+                    if (!window.gameStarted) {
+                        setTimeout(initGame, 500);
+                    }
+                };
+                document.head.appendChild(script);
+            }, 1000);
+        })();
     </script>
 </body>
 </html>
